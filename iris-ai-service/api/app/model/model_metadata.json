@@ -1,0 +1,10 @@
+{
+  "dataset": "sklearn.datasets.load_iris",
+  "model": "RandomForestClassifier",
+  "accuracy": 0.9,
+  "target_names": [
+    "setosa",
+    "versicolor",
+    "virginica"
+  ]
+}

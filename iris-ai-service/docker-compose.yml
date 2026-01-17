@@ -1,0 +1,75 @@
+services:
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: iris-api
+    ports:
+      - "8000:8000"
+    environment:
+      - API_PORT=8000
+      - CORS_ORIGINS=http://localhost:5174
+    restart: unless-stopped
+    networks:
+      - iris-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: iris-frontend
+    ports:
+      - "5174:80"
+    environment:
+      - VITE_API_BASE=http://localhost:8000
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - iris-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: iris-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--web.enable-lifecycle"
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - iris-network
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: iris-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-fastapi-dashboard.json:/etc/grafana/provisioning/dashboards/dashboard.json
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - iris-network
+
+networks:
+  iris-network:
+    driver: bridge
+
+volumes:
+  prometheus-data:
+  grafana-data:
